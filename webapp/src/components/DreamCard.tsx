@@ -1,79 +1,89 @@
 import { useNavigate } from 'react-router-dom';
 import type { Dream } from '../types';
 import EmotionBadge from './EmotionBadge';
-import { ChevronRightIcon } from './Icons';
 
-interface Props {
-  dream: Dream;
+const EMOTION_ICONS: Record<string, string> = {
+  fear: '◐', joy: '☀', sadness: '◑', surprise: '✦',
+};
+
+function formatDate(d: string) {
+  const date = new Date(d);
+  const now = new Date();
+  const diff = Math.floor((now.getTime() - date.getTime()) / 86400000);
+  if (diff === 0) return 'сегодня';
+  if (diff === 1) return 'вчера';
+  if (diff < 7) return `${diff} дня назад`;
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-}
-
-export default function DreamCard({ dream }: Props) {
+export default function DreamCard({ dream }: { dream: Dream }) {
   const navigate = useNavigate();
+  const hasInterp = (dream.interpretations?.length ?? 0) > 0;
 
   return (
     <div
-      className="glass animate-fade-in"
       onClick={() => navigate(`/dream/${dream.id}`)}
       style={{
-        padding: '16px',
+        display: 'flex', gap: 14, padding: '16px',
+        background: 'rgba(35, 27, 69, 0.5)',
+        border: '1px solid rgba(180,160,255,0.1)',
+        borderRadius: 20,
         marginBottom: 10,
         cursor: 'pointer',
         transition: 'all 0.2s',
-        display: 'flex',
-        gap: 12,
-        alignItems: 'flex-start',
+        backdropFilter: 'blur(8px)',
       }}
+      className="animate-fade-up"
     >
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          background: 'var(--bg-tertiary)',
-          border: '1px solid var(--border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          fontSize: 18,
-        }}
-      >
-        {dream.interpretations && dream.interpretations.length > 0 ? '✦' : '○'}
+      {/* Icon */}
+      <div style={{
+        width: 44, height: 44, flexShrink: 0,
+        borderRadius: 14,
+        background: hasInterp
+          ? 'linear-gradient(145deg, rgba(124,99,245,0.3), rgba(98,71,217,0.2))'
+          : 'rgba(180,160,255,0.07)',
+        border: `1px solid ${hasInterp ? 'rgba(124,99,245,0.4)' : 'rgba(180,160,255,0.1)'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 20,
+        color: hasInterp ? '#B8A9FF' : 'rgba(237,232,255,0.3)',
+      }}>
+        {EMOTION_ICONS[dream.emotion] ?? '◐'}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <EmotionBadge emotion={dream.emotion} size="sm" />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatDate(dream.created_at)}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0, marginLeft: 8 }}>
+            {formatDate(dream.created_at)}
+          </span>
         </div>
-        <p
-          style={{
-            fontSize: 13,
-            color: 'var(--text-secondary)',
-            lineHeight: 1.5,
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-          }}
-        >
+        <p style={{
+          fontSize: 13, lineHeight: 1.55,
+          color: 'var(--text-secondary)',
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        }}>
           {dream.text}
         </p>
-        {dream.interpretations && dream.interpretations.length > 0 && (
-          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 11, color: 'var(--accent-primary)' }}>
-              {dream.interpretations.length} расшифровк{dream.interpretations.length === 1 ? 'а' : 'и'}
-            </span>
+        {hasInterp && (
+          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            {dream.interpretations!.map((i) => (
+              <span key={i.id} style={{
+                fontSize: 10, fontWeight: 500,
+                color: 'rgba(180,160,255,0.6)',
+                background: 'rgba(124,99,245,0.1)',
+                padding: '2px 7px', borderRadius: 8,
+              }}>
+                {i.type === 'psychological' ? 'Психол.' : i.type === 'everyday' ? 'Житейск.' : 'Творч.'}
+              </span>
+            ))}
           </div>
         )}
       </div>
 
-      <ChevronRightIcon size={16} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: 12 }} />
+      <div style={{ display: 'flex', alignItems: 'center', color: 'rgba(180,160,255,0.25)', fontSize: 16 }}>›</div>
     </div>
   );
 }

@@ -1,63 +1,49 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import type { Stats, CalendarData } from '../types';
-import { CalendarIcon } from '../components/Icons';
 
-const EMOTION_LABELS: Record<string, { label: string; color: string }> = {
-  fear:     { label: 'Страх',     color: '#FF6B6B' },
-  joy:      { label: 'Радость',   color: '#FFD93D' },
-  sadness:  { label: 'Тоска',     color: '#6BA3FF' },
-  surprise: { label: 'Удивление', color: '#A8FF6B' },
+const EMOTIONS: Record<string, { label: string; color: string }> = {
+  fear:     { label: 'Страх',     color: '#E8758A' },
+  joy:      { label: 'Радость',   color: '#F5D87A' },
+  sadness:  { label: 'Тоска',     color: '#8FA3C8' },
+  surprise: { label: 'Удивление', color: '#8EC8C0' },
 };
 
-function MiniCalendar({ data }: { data: CalendarData }) {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-
-  const firstDay = new Date(year, month, 1).getDay();
-  const adjustedFirst = (firstDay + 6) % 7; // Mon-start
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const cells: (number | null)[] = [
-    ...Array(adjustedFirst).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
-
-  const monthName = today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+function Calendar({ data }: { data: CalendarData }) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
+  const days = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+  const monthName = now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="glass" style={{ padding: '16px' }}>
-      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 12, textAlign: 'center', textTransform: 'capitalize' }}>
+    <div style={{ padding: '18px', background: 'rgba(35,27,69,0.5)', border: '1px solid rgba(180,160,255,0.08)', borderRadius: 20 }}>
+      <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14, textTransform: 'capitalize', fontFamily: 'Playfair Display,serif' }}>
         {monthName}
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
         {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((d) => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-muted)', paddingBottom: 4 }}>
-            {d}
-          </div>
+          <div key={d} style={{ textAlign: 'center', fontSize: 9, color: 'var(--text-hint)', paddingBottom: 6, letterSpacing: '0.04em' }}>{d}</div>
         ))}
-        {cells.map((day, idx) => {
-          if (!day) return <div key={idx} />;
-          const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const count = data[key] || 0;
-          const isToday = day === today.getDate();
+        {cells.map((day, i) => {
+          if (!day) return <div key={i} />;
+          const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+          const count = data[key] ?? 0;
+          const isToday = day === now.getDate();
           return (
-            <div
-              key={idx}
-              style={{
-                aspectRatio: '1',
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontWeight: isToday ? 700 : 400,
-                background: count > 0 ? `rgba(108,99,255,${Math.min(0.2 + count * 0.15, 0.7)})` : 'transparent',
-                border: isToday ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                color: count > 0 ? 'var(--accent-secondary)' : isToday ? 'var(--text-primary)' : 'var(--text-muted)',
-              }}
-            >
+            <div key={i} style={{
+              aspectRatio: '1', borderRadius: 8,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11,
+              background: count > 0
+                ? `rgba(124,99,245,${Math.min(0.15 + count * 0.2, 0.65)})`
+                : 'transparent',
+              border: isToday ? '1px solid rgba(124,99,245,0.5)' : '1px solid transparent',
+              color: count > 0 ? 'var(--violet-300)' : isToday ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: isToday ? 700 : 400,
+            }}>
               {day}
             </div>
           );
@@ -80,82 +66,93 @@ export default function Stats() {
   }, []);
 
   if (loading) return (
-    <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
       <div className="spinner" />
     </div>
   );
 
-  const totalEmotions = Object.values(stats?.emotions || {}).reduce((a, b) => a + b, 0);
+  const total = Object.values(stats?.emotions ?? {}).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="page">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <CalendarIcon size={20} color="var(--accent-primary)" />
-        <h1 style={{ fontSize: 22 }}>Статистика</h1>
-      </div>
+    <div className="page" style={{ paddingTop: 20 }}>
+      <h1 style={{ fontSize: 26, marginBottom: 4 }}>Статистика</h1>
+      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>Ваш сонный журнал</p>
 
-      {/* Key numbers */}
+      {/* Big numbers */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
         {[
-          { label: 'Всего снов', value: stats?.total_dreams ?? 0, color: 'var(--accent-primary)' },
-          { label: 'Серия', value: `${stats?.streak_days ?? 0} дн.`, color: '#FF8C42' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="glass" style={{ padding: '18px 14px' }}>
-            <div style={{ fontSize: 28, fontFamily: "'Playfair Display', serif", fontWeight: 700, color }}>
-              {value}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{label}</div>
+          { val: stats?.total_dreams ?? 0, label: 'Снов записано', color: '#B8A9FF', sub: 'за всё время' },
+          { val: `${stats?.streak_days ?? 0}д`, label: 'Серия', color: '#F5D87A', sub: 'подряд' },
+        ].map(({ val, label, color, sub }) => (
+          <div key={label} style={{
+            padding: '20px 16px',
+            background: 'rgba(35,27,69,0.5)',
+            border: '1px solid rgba(180,160,255,0.08)',
+            borderRadius: 20,
+          }}>
+            <div style={{ fontSize: 34, fontFamily: 'Playfair Display,serif', fontWeight: 700, color }}>{val}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>{label}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>
           </div>
         ))}
       </div>
 
       {/* Calendar */}
+      <p className="section-title" style={{ marginBottom: 12 }}>Активность</p>
       <div style={{ marginBottom: 20 }}>
-        <p className="section-title">Календарь снов</p>
-        <MiniCalendar data={calendar} />
+        <Calendar data={calendar} />
       </div>
 
-      {/* Emotion distribution */}
-      {stats && totalEmotions > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <p className="section-title">Эмоции</p>
-          <div className="glass" style={{ padding: '16px' }}>
-            {Object.entries(stats.emotions)
-              .sort((a, b) => b[1] - a[1])
-              .map(([emotion, count]) => {
-                const cfg = EMOTION_LABELS[emotion] ?? { label: emotion, color: 'var(--text-muted)' };
-                const pct = Math.round((count / totalEmotions) * 100);
-                return (
-                  <div key={emotion} style={{ marginBottom: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 13, color: cfg.color }}>{cfg.label}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{count} ({pct}%)</span>
-                    </div>
-                    <div style={{ height: 6, background: 'var(--bg-tertiary)', borderRadius: 3, overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          height: '100%',
-                          width: `${pct}%`,
-                          background: cfg.color,
-                          borderRadius: 3,
-                          transition: 'width 0.6s ease',
-                        }}
-                      />
-                    </div>
+      {/* Emotions */}
+      {total > 0 && (
+        <>
+          <p className="section-title">Эмоциональный профиль</p>
+          <div style={{
+            padding: '18px',
+            background: 'rgba(35,27,69,0.5)',
+            border: '1px solid rgba(180,160,255,0.08)',
+            borderRadius: 20,
+            marginBottom: 20,
+          }}>
+            {Object.entries(stats?.emotions ?? {}).sort((a,b) => b[1]-a[1]).map(([emo, cnt]) => {
+              const cfg = EMOTIONS[emo] ?? { label: emo, color: 'var(--text-muted)' };
+              const pct = Math.round((cnt / total) * 100);
+              return (
+                <div key={emo} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
+                    <span style={{ fontSize: 13, color: cfg.color, fontWeight: 500 }}>{cfg.label}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{cnt} ({pct}%)</span>
                   </div>
-                );
-              })}
+                  <div style={{ height: 5, background: 'rgba(180,160,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`, borderRadius: 3,
+                      background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}80)`,
+                      transition: 'width 0.8s cubic-bezier(0.22,1,0.36,1)',
+                    }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        </>
       )}
 
-      {stats && totalEmotions === 0 && (
-        <div className="glass" style={{ padding: '32px 20px', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-            Запишите первый сон, чтобы увидеть статистику эмоций.
-          </p>
+      {/* Paid: PDF export promo */}
+      <div style={{
+        padding: '18px',
+        background: 'linear-gradient(135deg, rgba(245,216,122,0.07), rgba(232,160,192,0.05))',
+        border: '1px solid rgba(245,216,122,0.15)',
+        borderRadius: 20,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <span style={{ fontSize: 20 }}>◈</span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>PDF-дневник за месяц</span>
+          <div style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 100, background: 'rgba(124,99,245,0.15)', border: '1px solid rgba(124,99,245,0.25)', fontSize: 12, fontWeight: 700, color: 'var(--violet-300)' }}>25 ★</div>
         </div>
-      )}
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          Красивая книга ваших снов с инсайтами и расшифровками — сохраните или распечатайте.
+        </p>
+      </div>
     </div>
   );
 }
