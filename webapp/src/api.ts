@@ -5,6 +5,9 @@ import type {
   GalleryDream,
   CalendarData,
 } from './types';
+import { mockApi } from './api.mock';
+
+const MOCK_MODE = import.meta.env.VITE_MOCK === 'true';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 
@@ -51,7 +54,7 @@ const apiRequest = async <T>(
   return response.json() as Promise<T>;
 };
 
-export const api = {
+export const api = MOCK_MODE ? mockApi : {
   dreams: {
     list: (page = 1): Promise<Dream[]> =>
       apiRequest<Dream[]>(`/dreams?page=${page}`),
