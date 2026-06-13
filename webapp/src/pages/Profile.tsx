@@ -40,7 +40,7 @@ export default function Profile() {
   }, []);
 
   const initials = tgUser
-    ? ((tgUser.first_name?.[0] ?? '') + (tgUser.last_name?.[0] ?? '')).toUpperCase() || tgUser.first_name?.[0]?.toUpperCase() ?? '?'
+    ? (((tgUser.first_name?.[0] ?? '') + (tgUser.last_name?.[0] ?? '')).toUpperCase() || (tgUser.first_name?.[0]?.toUpperCase() ?? '?'))
     : '?';
 
   const streak = stats?.streak_days ?? 0;
